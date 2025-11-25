@@ -1,9 +1,11 @@
 //messageRouter.js
 const  {Router} = require("express");
-const { getMessages, sendMessages } = require("../controllers/messageController");
+const prisma = require("./script.js")
+const { getMessages, sendMessage } = require("../controllers/messageController");
 const messageRouter = Router();
 
-messageRouter.get("/", getMessages);
-messageRouter.get("/", sendMessages);
+messageRouter.get("/", getMessages(prisma));
+
+messageRouter.get("/", sendMessage(prisma));
 
 module.exports = messageRouter;
