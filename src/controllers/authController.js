@@ -47,7 +47,7 @@ function login(prisma) {
             {expiresIn: "7d"}
         );
 
-        res.json({message: "Logged in", token});
+        res.json({message: "Logged in", user, token});
     } 
 };
 

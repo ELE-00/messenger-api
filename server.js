@@ -1,13 +1,14 @@
 // server.js
+console.log("SERVER MODE:", process.env.NODE_ENV)
 
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
 
-const authRouter = require("./routes/authRouter");
-const messageRouter = require("./routes/messageRouter");
-const authenticationToken = require("./middleware/authenticationToken");
+const authRouter = require("./src/routes/authRouter.js");
+const conversationRouter = require("./src/routes/conversationRouter.js");
+const authenticationToken = require("./middleware/authenticateToken.js");
 
 
 const app = express();
@@ -20,9 +21,10 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 
 //Protected routes
-app.use("/api/messages", authenticationToken, messageRouter);
+app.use("/api/conversations", authenticationToken, conversationRouter);
 
 
-app.listen(3000, () => console.log("API running"));
+
+app.listen(3000, () => console.log("API running at localhost 3000"));
 
 

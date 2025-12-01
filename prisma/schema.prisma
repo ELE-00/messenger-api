@@ -13,30 +13,58 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ----------------- Users -----------------
 model User {
-  id               Int       @id @default(autoincrement())
-  username         String    @unique
+  id               Int                       @id @default(autoincrement())
+  username         String                    @unique
   name             String
   password         String
   bio              String?
-  createdAt        DateTime  @default(now())
-  sentMessages     Message[] @relation("SentMessages")
-  receivedMessages Message[] @relation("ReceivedMessages")
+  createdAt        DateTime                  @default(now())
+
+  sentMessages     Message[]                 @relation("SentMessages")
+  receivedMessages Message[]                 @relation("ReceivedMessages")
+  conversations    ConversationParticipant[] @relation("Participants")
 }
 
+schema:
+// ----------------- Messages -----------------
 model Message {
-  id          Int      @id @default(autoincrement())
-  senderId    Int
-  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
-  recipientId Int
-  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
-  content     String
-  createdAt   DateTime @default(now())
+  id             Int          @id @default(autoincrement())
+  senderId       Int
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  recipientId    Int
+  recipient      User         @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  content        String
+  createdAt      DateTime     @default(now())
+  conversationId Int
+  conversation   Conversation @relation("ConversationMessages", fields: [conversationId], references: [id])
 }
 
+// ----------------- Conversations -----------------
+model Conversation {
+  id             Int                       @id @default(autoincrement())
+  createdAt      DateTime                  @default(now())
+  lastMessageAt  DateTime?
+
+  messages       Message[]                 @relation("ConversationMessages")
+  participants   ConversationParticipant[]
+}
+
+// ----------------- Conversation Participants -----------------
+model ConversationParticipant {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  userId         Int
+  user           User         @relation("Participants", fields: [userId], references: [id])
+}
+
+// ----------------- Sessions -----------------
 model Session {
   id        String   @id @default(uuid())
   sid       String   @unique
   data      String
   expiresAt DateTime
 }
+
