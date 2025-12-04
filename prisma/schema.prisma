@@ -21,13 +21,12 @@ model User {
   password         String
   bio              String?
   createdAt        DateTime                  @default(now())
-
   sentMessages     Message[]                 @relation("SentMessages")
   receivedMessages Message[]                 @relation("ReceivedMessages")
   conversations    ConversationParticipant[] @relation("Participants")
+  profilepic       String?
 }
 
-schema:
 // ----------------- Messages -----------------
 model Message {
   id             Int          @id @default(autoincrement())

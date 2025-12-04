@@ -1,7 +1,7 @@
 //conversationRouter.js
 const  {Router} = require("express");
 const prisma = require("../../script.js")
-const { getConversations, createConversation, getMessages, sendMessage, getAllUsers, getUserData } = require("../controllers/messageController.js");
+const { getConversations, createConversation, getMessages, sendMessage, getAllUsers } = require("../controllers/conversationController.js");
 const conversationRouter = Router();
 
 
@@ -10,9 +10,6 @@ conversationRouter.get("/", getConversations(prisma));
 
 //created a new conversation
 conversationRouter.post("/", createConversation(prisma));
-
-//get current users
-conversationRouter.get("/user", getUserData(prisma));
 
 //get all users
 conversationRouter.get("/users", getAllUsers(prisma));

@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "cloudinary": "^2.8.0",
+    "multer": "^2.0.2",
     "prisma": "^6.0.0"
   },
   "devDependencies": {
