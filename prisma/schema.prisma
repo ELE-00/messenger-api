@@ -22,7 +22,6 @@ model User {
   bio              String?
   createdAt        DateTime                  @default(now())
   sentMessages     Message[]                 @relation("SentMessages")
-  receivedMessages Message[]                 @relation("ReceivedMessages")
   conversations    ConversationParticipant[] @relation("Participants")
   profilepic       String?
 }
@@ -32,8 +31,6 @@ model Message {
   id             Int          @id @default(autoincrement())
   senderId       Int
   sender         User         @relation("SentMessages", fields: [senderId], references: [id])
-  recipientId    Int
-  recipient      User         @relation("ReceivedMessages", fields: [recipientId], references: [id])
   content        String
   createdAt      DateTime     @default(now())
   conversationId Int
@@ -45,9 +42,20 @@ model Conversation {
   id             Int                       @id @default(autoincrement())
   createdAt      DateTime                  @default(now())
   lastMessageAt  DateTime?
+  type           ConversationType          @default(DIRECT) // <-- NEW
+  name           String?                   // group name (null for direct chats)
+  avatar         String?                    
+
+
 
   messages       Message[]                 @relation("ConversationMessages")
   participants   ConversationParticipant[]
+}
+
+
+enum ConversationType {
+  DIRECT     // 1-1
+  GROUP      // multi
 }
 
 // ----------------- Conversation Participants -----------------
@@ -66,4 +74,3 @@ model Session {
   data      String
   expiresAt DateTime
 }
-

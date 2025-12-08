@@ -1,4 +1,4 @@
-
+const cloudinary = require('cloudinary').v2;
 
 function getConversations(prisma){
     return async (req, res) => {
@@ -33,21 +33,46 @@ function getConversations(prisma){
 
 function createConversation(prisma) {
   return async (req, res) => {
-    const userId = req.user.id;
-    const { recipientId } = req.body;
+    // const userId = req.user.id;   
+    let { groupName, participants } = req.body;
+
+    if(typeof participants === "string") {
+      try {
+        participants = JSON.parse(participants);
+      }catch (err) {
+        return res.status(400).json({error: "Invalid participants format"})
+      }
+    }
+    const isGroup = participants.length > 2;
+    let avatarUrl = null;
 
     try {
-      // 1. Create conversation
+        // Upload to Cloudinary if group an dfile provided
+        if(isGroup && req.file) {
+          const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+              folder: "group_pics",
+              resource_type: "image"
+        });
+
+        avatarUrl = uploadResult.secure_url;
+      }
+
+      // Create conversation
       const newConversation = await prisma.conversation.create({
-        data: {}
+        data: {
+          type: isGroup? "GROUP" : "DIRECT",
+          name: isGroup? groupName : null,
+          avatar: avatarUrl
+
+        }
       });
 
       // 2. Add both participants
       await prisma.conversationParticipant.createMany({
-        data: [
-          { conversationId: newConversation.id, userId },
-          { conversationId: newConversation.id, userId: recipientId }
-        ]
+        data: participants.map(pId => ({ 
+          conversationId: newConversation.id, 
+          userId: pId 
+        }))
       });
 
       res.json({
@@ -61,6 +86,7 @@ function createConversation(prisma) {
     }
   };
 }
+
 
 
 function getMessages(prisma){
@@ -88,11 +114,11 @@ function getMessages(prisma){
 function sendMessage(prisma){
     return async (req, res) => {
         const chatId = parseInt(req.params.id);
-        const {senderId, recipientId, content} = req.body;
+        const {senderId, content} = req.body;
 
         try{
         const newMessage = await prisma.message.create({
-            data: {senderId: senderId, recipientId: recipientId , content: content, conversationId: chatId}
+            data: {senderId: senderId, content: content, conversationId: chatId}
         })
 
         res.json(newMessage, { message: "Message written to db" });
@@ -124,4 +150,6 @@ function getAllUsers(prisma){
 
 
 
-module.exports = { getConversations, createConversation, getMessages, sendMessage, getAllUsers };
+
+
+module.exports = { getConversations, createConversation, getMessages, sendMessage, getAllUsers};

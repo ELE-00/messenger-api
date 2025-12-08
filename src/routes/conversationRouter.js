@@ -1,7 +1,9 @@
 //conversationRouter.js
 const  {Router} = require("express");
 const prisma = require("../../script.js")
-const { getConversations, createConversation, getMessages, sendMessage, getAllUsers } = require("../controllers/conversationController.js");
+const { getConversations, createConversation, getMessages, sendMessage, getAllUsers} = require("../controllers/conversationController.js");
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 const conversationRouter = Router();
 
 
@@ -9,7 +11,7 @@ const conversationRouter = Router();
 conversationRouter.get("/", getConversations(prisma));
 
 //created a new conversation
-conversationRouter.post("/", createConversation(prisma));
+conversationRouter.post("/", upload.single("groupprofilepic"), createConversation(prisma));
 
 //get all users
 conversationRouter.get("/users", getAllUsers(prisma));
