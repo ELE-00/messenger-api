@@ -12,6 +12,8 @@ REST API and real-time messaging backend for Whispr, built with Express, Prisma,
 - **File uploads:** Multer + Cloudinary
 - **Rate limiting:** express-rate-limit
 
+- > **Frontend repo:** [https://github.com/ELE-00/messenger-app](https://github.com/ELE-00/messenger-app)
+
 ## Getting Started
 
 ### Prerequisites
