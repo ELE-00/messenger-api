@@ -1,68 +1,60 @@
+// messageController.test.js
+// Tests for message-related functions in conversationController
+
+const { sendMessage, getMessages } = require("../src/controllers/conversationController");
 
 
-const { getMessages, sendMessage } = require("../src/controllers/messageController");
+describe("sendMessage via HTTP", () => {
+    test("saves message and returns it", async () => {
+        const mockMessage = { id: 10, senderId: 1, content: "Hello!", conversationId: 5 };
+        const prismaMock = {
+            conversationParticipant: {
+                findFirst: jest.fn().mockResolvedValue({ id: 1 })
+            },
+            message: {
+                create: jest.fn().mockResolvedValue(mockMessage)
+            }
+        };
 
-//Testing sendMessage
+        const req = {
+            user: { id: 1 },
+            params: { id: "5" },
+            body: { content: "Hello!" }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-describe("sendMessage controller", () => {
-  test("saves message to mock db", async () => {
-    const prismaMock = {
-      message: {
-      create: jest.fn().mockResolvedValue({
-        id: 10,
-        senderId: 1,
-        recipientId: 2,
-        content: "Hello!"
-        })
-      }
-    };
+        await sendMessage(prismaMock)(req, res);
 
-    const req = {
-      user: { id: 1 },
-      body: { recipientId: 2, content: "Hello!" }
-    };
-
-    const res = { json: jest.fn() };
-
-    await sendMessage(prismaMock)(req,res);
-
-    expect(prismaMock.message.create).toHaveBeenCalledWith({
-      data: {senderId: 1, recipientId: 2 , content: "Hello!"}
+        expect(prismaMock.message.create).toHaveBeenCalledWith({
+            data: { senderId: 1, content: "Hello!", conversationId: 5 }
+        });
+        expect(res.json).toHaveBeenCalledWith(mockMessage);
     });
-
-    expect(res.json).toHaveBeenCalledWith({ message: "Message written to db" });
-
-  })
-})
+});
 
 
-describe("getMessage controller", () => {
-  test("message send to mock db", async () => {
+describe("getMessages", () => {
+    test("returns array of messages for participant", async () => {
+        const mockMessages = [
+            { id: 10, senderId: 1, content: "Hello!" },
+            { id: 11, senderId: 2, content: "Hi!" }
+        ];
+        const prismaMock = {
+            conversationParticipant: {
+                findFirst: jest.fn().mockResolvedValue({ id: 1 })
+            },
+            message: {
+                findMany: jest.fn().mockResolvedValue(mockMessages)
+            }
+        };
 
-    const prismaMock = {
-      message: {
-      findMany: jest.fn().mockResolvedValue([
-        {id: 10, senderId: 1,  recipientId: 2, content: "Hello!"},
-        {id: 11, senderId: 2,  recipientId: 1, content: "Hi!"}]
-      )
-      }
-    };
+        const req = { user: { id: 1 }, params: { id: "5" } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-    const req = {
-      user: { id: 1 },
-    };
+        await getMessages(prismaMock)(req, res);
 
-    const res = { json: jest.fn() };
-
-    await getMessages(prismaMock)(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(expect.arrayContaining([
-      expect.objectContaining({ content: "Hi!" })
-    ]));
-
-
-
-  })
-})
-
-
+        expect(res.json).toHaveBeenCalledWith(expect.arrayContaining([
+            expect.objectContaining({ content: "Hi!" })
+        ]));
+    });
+});

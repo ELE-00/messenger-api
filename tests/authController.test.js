@@ -1,114 +1,137 @@
-
 // authController.test.js
 
 const { signup, login } = require("../src/controllers/authController");
+
+jest.mock("bcrypt", () => ({
+    hash: jest.fn().mockResolvedValue("hashedPassword"),
+    compare: jest.fn()
+}));
+
+jest.mock("jsonwebtoken", () => ({
+    sign: jest.fn(() => "mockedToken")
+}));
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-// //Testing signup
-// describe("signup", () => {
-//     test("signup", async () => {
-//         const prismaMock = {
-//             user: {
-//             findUnique: jest.fn().mockResolvedValue(null),
-//             create: jest.fn().mockResolvedValue({
-//                 id: 1,
-//                 username: "bob",
-//                 password: "123",
-//                 passwordConfirm: "123",
-//                 })
-//             }
-//         };
 
-//     const req = {
-//       body: { username: "bob", password: "123", passwordConfirm: "123"}
-//     };  
+// ---- signup ----
 
-//     const res = { json: jest.fn() };
+describe("signup", () => {
+    test("returns 400 if fields are missing", async () => {
+        const prismaMock = { user: { findUnique: jest.fn() } };
+        const req = { body: { username: "bob", password: "secret" } }; // missing passwordConfirm
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-//     await signup(prismaMock)(req,res);
+        await signup(prismaMock)(req, res);
 
-//     expect(prismaMock.user.create).toHaveBeenCalledWith({
-//         data: { username: "bob", name: "bob", password: expect.any(String)}
-//     })
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: "All fields are required" });
+    });
 
-//     })
-// })
+    test("returns 400 if password too short", async () => {
+        const prismaMock = { user: { findUnique: jest.fn() } };
+        const req = { body: { username: "bob", password: "abc", passwordConfirm: "abc" } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
+        await signup(prismaMock)(req, res);
 
-//Mock bcrypt 
-    jest.mock("bcrypt", () => ({
-        compare: jest.fn()
-    }));
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: "Password must be at least 6 characters" });
+    });
 
-    jest.mock("jsonwebtoken", () => ({
-    sign: jest.fn(() => "mockedToken") // always returns a dummy token
-    }));
+    test("returns 400 if passwords do not match", async () => {
+        const prismaMock = { user: { findUnique: jest.fn() } };
+        const req = { body: { username: "bob", password: "secret1", passwordConfirm: "secret2" } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
+        await signup(prismaMock)(req, res);
 
-//Testing login fail
-describe("login", () => {
-    test("login", async () => {
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: "Passwords do not match" });
+    });
+
+    test("returns 409 if username already taken", async () => {
+        const prismaMock = {
+            user: { findUnique: jest.fn().mockResolvedValue({ id: 1, username: "bob" }) }
+        };
+        const req = { body: { username: "bob", password: "secret1", passwordConfirm: "secret1" } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await signup(prismaMock)(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(409);
+        expect(res.json).toHaveBeenCalledWith({ error: "Username already taken" });
+    });
+
+    test("creates user and returns 201 on success", async () => {
         const prismaMock = {
             user: {
-            // findUnique: jest.fn().mockResolvedValue(null),
-            findUnique: jest.fn().mockResolvedValue({
-                id: 1,
-                username: "bob",
-                password: "hashedPassword"
-                })
+                findUnique: jest.fn().mockResolvedValue(null),
+                create: jest.fn().mockResolvedValue({ id: 1, username: "bob" })
             }
         };
+        const req = { body: { username: "bob", password: "secret1", passwordConfirm: "secret1" } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await signup(prismaMock)(req, res);
+
+        expect(prismaMock.user.create).toHaveBeenCalledWith({
+            data: { username: "bob", name: "bob", password: "hashedPassword" }
+        });
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+});
 
 
+// ---- login ----
 
-    const req = {body: { username: "bob", password: "wrongPassword"}};  
-    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-
-    const bcrypt = require("bcrypt")
-    bcrypt.compare.mockResolvedValue(false)
-
-    await login(prismaMock)(req,res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({error: "Invalid credentials"})
-
-    })
-})
-
-//Testing login sucess
 describe("login", () => {
-    test("login", async () => {
+    test("returns 400 if user not found", async () => {
         const prismaMock = {
-            user: {
-            // findUnique: jest.fn().mockResolvedValue(null),
-            findUnique: jest.fn().mockResolvedValue({
-                id: 1,
-                username: "bob",
-                password: "hashedPassword"
-                })
-            }
+            user: { findUnique: jest.fn().mockResolvedValue(null) }
         };
+        const req = { body: { username: "ghost", password: "secret1" } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
+        await login(prismaMock)(req, res);
 
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: "Invalid credentials" });
+    });
 
-    const req = {body: { username: "bob", password: "hashedPassword"}};  
-    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    test("returns 400 if password does not match", async () => {
+        const prismaMock = {
+            user: { findUnique: jest.fn().mockResolvedValue({ id: 1, username: "bob", password: "hashedPassword" }) }
+        };
+        const req = { body: { username: "bob", password: "wrongPassword" } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
-    const bcrypt = require("bcrypt")
-    bcrypt.compare.mockResolvedValue(true)
+        bcrypt.compare.mockResolvedValue(false);
+        await login(prismaMock)(req, res);
 
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: "Invalid credentials" });
+    });
 
-    await login(prismaMock)(req,res);
+    test("returns token on successful login", async () => {
+        const prismaMock = {
+            user: { findUnique: jest.fn().mockResolvedValue({ id: 1, username: "bob", password: "hashedPassword" }) }
+        };
+        const req = { body: { username: "bob", password: "correctPassword" } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
+        bcrypt.compare.mockResolvedValue(true);
+        await login(prismaMock)(req, res);
 
-
-    expect(jwt.sign).toHaveBeenCalledWith(
-        {id: 1, username: "bob"},
-        process.env.JWT_SECRET,
-        {expiresIn: "7d"}
-    );
- 
-    expect(res.json).toHaveBeenCalledWith({message: "Logged in", token: "mockedToken"})
-    })
-})
+        expect(jwt.sign).toHaveBeenCalledWith(
+            { id: 1, username: "bob" },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            message: "Logged in",
+            token: "mockedToken"
+        }));
+    });
+});

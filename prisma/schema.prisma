@@ -67,10 +67,3 @@ model ConversationParticipant {
   user           User         @relation("Participants", fields: [userId], references: [id])
 }
 
-// ----------------- Sessions -----------------
-model Session {
-  id        String   @id @default(uuid())
-  sid       String   @unique
-  data      String
-  expiresAt DateTime
-}
